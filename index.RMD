@@ -1,0 +1,10 @@
+Practical Machine Learning -Predicting Better Performance
+===============================
+
+##Load the training and test Data
+```{r,warning=FALSE,message=FALSE, cache=TRUE}
+pml.train<-read.table("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv",sep=",",head=T,row.names=1)
+
+pml.test<-read.table("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv",sep=",",head=T,row.names=1)
+```
+
