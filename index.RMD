@@ -1,10 +1,88 @@
 Practical Machine Learning -Predicting Better Performance
 ===============================
+##   Executive Summary  
 
-##Load the training and test Data
+In this project a predictive model is built that will predict the quality of barbell lifts by measuring 3 dimensional data at four places on the subject: belt, arm, forearm, and dumb bell.  Random Forest is used for the predictive model and the training set is divided into a training and test for cross validation.  The models will be assessed accuracy, in and out of sample error (1-accuracy), and by using the Out of Back (OOB) error rate.  Lastly, the model will be tested on the test provided.
+
+##  Load Required Libraries
+```{r,warning=FALSE,message=FALSE, cache=TRUE}
+library(caret)
+library(dplyr)
+library(forecast)
+```
+  
+#  Model Creation
+
+##  Load the training and test Data (provided by the problem)
+  
 ```{r,warning=FALSE,message=FALSE, cache=TRUE}
 pml.train<-read.table("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv",sep=",",head=T,row.names=1)
 
 pml.test<-read.table("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv",sep=",",head=T,row.names=1)
 ```
 
+
+I will select the 12 variables with accelerometer data (3 dimensions for arm, forearm, belt, and dumb bell).  User is also included because there may be variance between subjects.  For visibility, this subset will be used to build the model.
+
+```{r,warning=FALSE,message=FALSE, cache=TRUE}
+pml.train.sel<-pml.train %>% select(classe, user_name, accel_belt_x,accel_belt_y,accel_belt_z,accel_arm_x,accel_arm_y,accel_arm_z,accel_dumbbell_x,accel_dumbbell_y,accel_dumbbell_z,accel_forearm_x,accel_forearm_y,accel_forearm_z)
+```
+       
+##  Cross Validation  
+
+The training data provided has 19622 observations.  In order to conduct cross-validation  75% of the training file will be used to train the model.  The other 25% will be used to the test the model.  Random Forest method is used to build the model and Random Forest is susceptible to overfitting so using cross-validation is important to building an accurate model.
+
+```{r, cache=TRUE}
+inTrain = createDataPartition(pml.train.sel$classe, p = 3/4)[[1]]
+
+pml.training = pml.train.sel[ inTrain,]
+
+pml.testing = pml.train.sel[-inTrain,]
+```
+  
+## Model Building  
+The model is trained using the train function in Caret and pml.training data which represents 75% of the total training data set.  I chose random forest because this method is accurate, good for classification, and is widely used. 
+
+```{r, cache=TRUE}
+fit<-train(classe ~ ., data=pml.training, method="rf")
+```
+
+The final model results are given.  Note the OOB error rate is 5.73% which is good. 
+
+```{r}
+fit
+```
+
+Next I will use a confusion matrix to determine in-sample error. As can be seen the confusion matrix is perfectly accurate so the in-sample error is 0%.  
+
+```{r, cache=TRUE}
+final<-predict(fit, newdata = pml.training)
+confusionMatrix(final,pml.training$classe)
+```
+  The model uses 9 variables per split to maximize accuracy, the plot below shows how accuracy changes as the number of variables per split change.  The highest accuracy corresponds to 9 which is  what the model selected.
+
+```{r}
+plot(fit)
+```
+
+## Model Validation and Expected Sample Error  
+Next I will test the model on pml.testing data.  This represents 25% of the original training set that was set aside for cross validation.  A confusion matrix is use to determine out of sample error which is expected to be greater than the in sample error.  
+
+```{r, cache=TRUE}
+final<-predict(fit, newdata = pml.testing)
+confusionMatrix(final,pml.testing$classe)
+```
+  
+  The accuracy is .9486 (less than the training data results of 1.00).  This gives an out of sample error of 5.14% which is (and as expected) greater than the in sample error.  Over all, this model appears fairly accurate and I will use to predict the 20 test results.
+  
+  
+  Now, the final validation where the model will be tested on the test data with 20 observations.  A confusion matrix is used to determine accuracy and out of sample error.
+
+```{r}
+final<-predict(fit, newdata = pml.test)
+final
+```
+  
+##  Summary and Conclusion  
+
+In conclusion a predictive model using random forest has been built with an accuracy of 0.9486 and a 95% confidence interval between .9421  and  .9546.    The initial training data was split 75% for training and the remaining 25% for testing.  Using a confusion matrix, the model has a zero in sample error and an out of sample error slightly about 5%, as expected not as good as the in sample error.  Overall, the model is sufficient and will be used to predict the results for the 20 test observations.
